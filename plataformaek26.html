@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SIA - Edward Kennedy | Gestión Total CNEB</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root { --primary: #3c7fdb; --dark: #2c3e50; --bg: #f4f7f6; --success: #27ae60; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; background: var(--bg); height: 100vh; overflow: hidden; }
+        
+        .sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; z-index: 100; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-menu { list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; }
+        .nav-menu li { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+        .nav-menu li:hover { background: rgba(255,255,255,0.1); }
+        .nav-menu li.active { background: rgba(0,0,0,0.2); border-left: 5px solid #fff; }
+        .nav-menu i { margin-right: 10px; width: 15px; text-align: center; }
+
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { background: white; padding: 10px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        .panel { display: none; padding: 20px; overflow-y: auto; height: calc(100vh - 60px); }
+        .panel.active { display: block; }
+
+        .controls { display: flex; gap: 10px; margin-bottom: 15px; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); align-items: center; flex-wrap: wrap; }
+        select, .btn-main { padding: 8px 12px; border-radius: 5px; border: 1px solid #ddd; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        .btn-main { background: var(--primary); color: white; border: none; }
+
+        .table-container { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+        th { background: #f8f9fa; padding: 10px; border: 1px solid #eee; position: sticky; top: 0; z-index: 10; font-size: 0.6rem; }
+        td { padding: 4px; border: 1px solid #eee; text-align: center; }
+        .input-nombre { width: 95%; padding: 4px; border: none; border-bottom: 1px solid #eee; outline: none; background: transparent; font-size: 0.75rem; }
+        .input-calif { width: 30px; padding: 4px; border: 1px solid #ddd; border-radius: 3px; text-align: center; font-weight: bold; text-transform: uppercase; }
+
+        .badge-logro { padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; min-width: 25px; display: inline-block; }
+        .bg-ad { background: #2980b9; } .bg-a { background: #27ae60; } .bg-b { background: #f1c40f; } .bg-c { background: #e74c3c; }
+
+        .card-center { background: white; padding: 40px; border-radius: 12px; text-align: center; max-width: 550px; margin: 40px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 6px solid var(--primary); }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-university fa-2x"></i>
+            <h3>EDWARD KENNEDY</h3>
+            <p style="font-size: 0.6rem; letter-spacing: 1px; opacity: 0.8;">TACNA - PERÚ</p>
+        </div>
+        <ul class="nav-menu">
+            <li class="active" onclick="switchPanel('registro', this)"><i class="fas fa-edit"></i> REGISTRO AUXILIAR</li>
+            <li onclick="switchPanel('asistencia', this)"><i class="fas fa-user-check"></i> ASISTENCIA</li>
+            <li onclick="switchPanel('libretas', this)"><i class="fas fa-file-pdf"></i> LIBRETAS BIMESTRALES</li>
+            <li onclick="switchPanel('siagie', this)"><i class="fas fa-file-export"></i> EXPORTAR SIAGIE</li>
+        </ul>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div id="panel-title"><strong>Módulo:</strong> Registro Auxiliar</div>
+            <div style="font-size: 0.75rem; font-weight: bold; color: var(--primary);">2026 - TACNA</div>
+        </header>
+
+        <div id="registro" class="panel active">
+            <div class="controls">
+                <select id="grado" onchange="actualizarTabla()"><option>1ero Secundaria</option><option>2do Secundaria</option><option>3ero Secundaria</option><option>4to Secundaria</option><option>5to Secundaria</option></select>
+                <select id="area" onchange="actualizarTabla()" style="width: 280px;">
+                    <option value="MAT">MATEMÁTICA</option>
+                    <option value="COM">COMUNICACIÓN</option>
+                    <option value="ING">INGLÉS (LE)</option>
+                    <option value="CYT">CIENCIA Y TECNOLOGÍA</option>
+                    <option value="SOC">CIENCIAS SOCIALES</option>
+                    <option value="DPCC">DPCC</option>
+                    <option value="EPT">EPT (EMPRENDIMIENTO)</option>
+                    <option value="EF">EDUCACIÓN FÍSICA</option>
+                    <option value="ART">ARTE Y CULTURA</option>
+                    <option value="REL">EDUCACIÓN RELIGIOSA</option>
+                    <option value="TUT">TUTORÍA / COMP. TRANSVERSALES</option>
+                </select>
+                <select id="bimestre" onchange="actualizarTabla()"><option>I BIMESTRE</option><option>II BIMESTRE</option><option>III BIMESTRE</option><option>IV BIMESTRE</option></select>
+                <button class="btn-main" onclick="alert('Datos autoguardados en el navegador')"><i class="fas fa-save"></i> Guardar Todo</button>
+            </div>
+            <div class="table-container">
+                <table id="tablaNotas"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+            </div>
+        </div>
+
+        <div id="asistencia" class="panel">
+            <div class="card-center"><i class="fas fa-qrcode fa-4x" style="color:var(--primary)"></i><h2>Asistencia QR 2026</h2><p>Módulo de escaneo Edward Kennedy.</p></div>
+        </div>
+
+        <div id="libretas" class="panel">
+            <div class="card-center"><i class="fas fa-file-pdf fa-4x" style="color:var(--danger)"></i><h2>Reportes en PDF</h2><button class="btn-main" style="background:var(--danger); width:100%" onclick="exportarPDF()">Descargar PDF</button></div>
+        </div>
+
+        <div id="siagie" class="panel">
+            <div class="card-center"><i class="fas fa-file-excel fa-4x" style="color:var(--success)"></i><h2>Carga Masiva SIAGIE</h2><button class="btn-main" style="background:var(--success); width:100%" onclick="exportarExcel()">Descargar Excel (.xlsx)</button></div>
+        </div>
+    </main>
+
+    <script>
+        const currCNEB = {
+            'MAT': ["Resuelve Cantidad", "Regularidad y Cambio", "Forma y Movimiento", "Gestión de Datos"],
+            'COM': ["Se comunica oralmente", "Lee diversos textos", "Escribe diversos textos"],
+            'ING': ["Oral Skills", "Reading", "Writing"],
+            'CYT': ["Indaga métodos", "Mundo físico", "Diseña soluciones"],
+            'SOC': ["Interpret. Históricas", "Espacio y Ambiente", "Recursos Econ."],
+            'DPCC': ["Construye Identidad", "Convive y Participa"],
+            'EPT': ["Gestiona Emprendimiento"],
+            'EF': ["Motrizmente", "Vida Saludable", "Interactúa"],
+            'ART': ["Aprecia manifestaciones", "Crea proyectos"],
+            'REL': ["Identidad Religiosa", "Experiencia de Fe"],
+            'TUT': ["Autonomía", "Entornos Virtuales"]
+        };
+
+        const califMap = { "AD": 4, "A": 3, "B": 2, "C": 1, "": 0 };
+        const revMap = { 4: "AD", 3: "A", 2: "B", 1: "C", 0: "-" };
+
+        function switchPanel(id, el) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-menu li').forEach(l => l.classList.remove('active'));
+            const target = document.getElementById(id);
+            if(target) { target.classList.add('active'); el.classList.add('active'); document.getElementById('panel-title').innerHTML = `<strong>Módulo:</strong> ${el.innerText.trim()}`; }
+        }
+
+        function guardarEnLocal() {
+            const area = document.getElementById('area').value;
+            const grado = document.getElementById('grado').value;
+            const bimestre = document.getElementById('bimestre').value;
+            const data = [];
+            document.querySelectorAll('#tbody tr').forEach(tr => {
+                const nombre = tr.querySelector('.input-nombre').value;
+                const notas = Array.from(tr.querySelectorAll('.input-calif')).map(i => i.value);
+                data.push({ nombre, notas });
+            });
+            localStorage.setItem(`SIA_${grado}_${area}_${bimestre}`, JSON.stringify(data));
+        }
+
+        function cargarDesdeLocal() {
+            const area = document.getElementById('area').value;
+            const grado = document.getElementById('grado').value;
+            const bimestre = document.getElementById('bimestre').value;
+            const saved = JSON.parse(localStorage.getItem(`SIA_${grado}_${area}_${bimestre}`));
+            if (saved) {
+                const rows = document.querySelectorAll('#tbody tr');
+                saved.forEach((d, i) => { if (rows[i]) { rows[i].querySelector('.input-nombre').value = d.nombre; const inps = rows[i].querySelectorAll('.input-calif'); d.notas.forEach((n, idx) => { if(inps[idx]) { inps[idx].value = n; validar(inps[idx], i+1); }}); }});
+            }
+        }
+
+        function actualizarTabla() {
+            const area = document.getElementById('area').value;
+            const comps = currCNEB[area];
+            const thead = document.getElementById('thead');
+            const tbody = document.getElementById('tbody');
+            thead.innerHTML = `<tr><th>N°</th><th width="280">Estudiante</th>${comps.map(c => `<th>${c}</th>`).join('')}<th>LOGRO</th></tr>`;
+            tbody.innerHTML = '';
+            for (let i = 1; i <= 28; i++) {
+                let row = `<tr><td>${i}</td><td><input type="text" class="input-nombre" oninput="guardarEnLocal()"></td>`;
+                comps.forEach(() => row += `<td><input type="text" class="input-calif" maxlength="2" oninput="validar(this, ${i}); guardarEnLocal()"></td>`);
+                row += `<td><span id="logro-${i}" class="badge-logro bg-c">-</span></td></tr>`;
+                tbody.innerHTML += row;
+            }
+            cargarDesdeLocal();
+        }
+
+        function validar(input, id) {
+            let v = input.value.toUpperCase();
+            if (!["AD", "A", "B", "C"].includes(v)) { input.value = ""; } else { input.value = v; }
+            const tr = input.closest('tr');
+            const inps = tr.querySelectorAll('.input-calif');
+            let suma = 0, cont = 0;
+            inps.forEach(i => { if(i.value) { suma += califMap[i.value]; cont++; }});
+            const b = document.getElementById(`logro-${id}`);
+            if(cont>0) { const p = revMap[Math.round(suma/cont)]; b.innerText = p; b.className = `badge-logro bg-${p.toLowerCase()}`; }
+        }
+
+        function exportarExcel() {
+            const area = document.getElementById('area').value;
+            const rows = [["N°", "Estudiante", ...currCNEB[area], "Logro"]];
+            document.querySelectorAll('#tbody tr').forEach(tr => {
+                const nombre = tr.querySelector('.input-nombre').value;
+                const notas = Array.from(tr.querySelectorAll('.input-calif')).map(i => i.value || "-");
+                rows.push([tr.cells[0].innerText, nombre, ...notas, tr.querySelector('.badge-logro').innerText]);
+            });
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Registro");
+            XLSX.writeFile(wb, `SIAGIE_2026_${area}.xlsx`);
+        }
+
+        function exportarPDF() {
+            const doc = new jspdf.jsPDF('l', 'mm', 'a4');
+            const area = document.getElementById('area').value;
+            const body = [];
+            document.querySelectorAll('#tbody tr').forEach(tr => {
+                const nombre = tr.querySelector('.input-nombre').value;
+                const notas = Array.from(tr.querySelectorAll('.input-calif')).map(i => i.value || "-");
+                body.push([tr.cells[0].innerText, nombre, ...notas, tr.querySelector('.badge-logro').innerText]);
+            });
+            doc.text(`EDWARD KENNEDY - REGISTRO ${area} 2026`, 14, 15);
+            doc.autoTable({ startY: 20, head: [["N°", "Estudiante", ...currCNEB[area], "Logro"]], body: body, theme: 'grid', styles: { fontSize: 7 }});
+            doc.save(`Libreta_2026_${area}.pdf`);
+        }
+
+        window.onload = actualizarTabla;
+    </script>
+</body>
+</html>
